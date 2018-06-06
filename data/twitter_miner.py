@@ -22,6 +22,9 @@ from tweepy.streaming import StreamListener
 
 from stop_words import get_stop_words
 
+import gzip
+import json
+
 # Parse the command line
 arguments= docopt(__doc__)
 keywords = arguments["--k"]
@@ -42,7 +45,7 @@ api = tp.API(auth)
 
 # Generate file name
 timestr = time.strftime("%Y%m%d-%H%M%S")
-filename = "twitter-"+timestr+".json"
+filename = "twitter-"+timestr+".json.gz"
 
 # Get italian stop-words (this is done to overcome the weakness of the
 # free Twitter API which do not permit to filter tweets for language only)
@@ -53,9 +56,9 @@ class TwitterFilter(StreamListener):
 
 	def on_data(self, raw_data):
 		try:
-			with open(filename, "a") as log:
+			with gzip.GzipFile(filename, "ab") as log:
 				print("[*] Writing tweet")
-				log.write(raw_data)
+				log.write(raw_data.encode())
 				return True
 		except BaseException as e:
 			print(str(e))
