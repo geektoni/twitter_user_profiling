@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""Twitter
+"""Twitter Miner
+
+Script to mine tweets from Twitter API and then upload them to an AWS S3 bucket.
+To work with the Twitter API you need to set these enviromental variables:
+* CONSUMER_KEY, CONSUMER_SECRET;
+* ACCESS_TOKEN, ACCESS_SECRET;
+Those information can be requested from the Twitter Developer website.
 
 Usage:
 	twitter_miner.py [--k=<keywords>] [--l=<languages>] [--max=<max_tweets>] [--verbose]
 
-	--k=<keywords>		Filter tweets based on keywords.
-	--l=<languages>		Filter tweets based on language.
-    --max=<max_tweets>  Set the maximum number of tweets we want to mine.
-    --verbose           Verbose behaviour.
-	-h, --help			Print this help message.
+	--k=<keywords>     Filter tweets based on keywords.
+	--l=<languages>    Filter tweets based on language.
+	--max=<max_tweets> Set the maximum number of tweets we want to mine.
+	--verbose          Verbose behaviour.
+	-h, --help         Print this help message.
 """
 
 import os
@@ -36,8 +42,8 @@ max_tweets = arguments["--max"] if arguments["--max"] else -1
 
 # Print verbose definition
 def print_verbose(text, arg=arguments):
-    if arg["--verbose"]:
-        print(text)
+	if arg["--verbose"]:
+		print(text)
 
 # Keys for Twitter API
 consumer_key = os.environ["CONSUMER_KEY"]
@@ -75,8 +81,8 @@ class TwitterFilter(StreamListener):
 	# Custom method to check file size and upload it to amazon s3
 	def check_size(self):
 		size = os.path.getsize(self.filename)
-        # Create a file and upload it only if we reach the dimension of 50MB
-        # or if we reach the maximum number of tweets for that file.
+		# Create a file and upload it only if we reach the dimension of 50MB
+		# or if we reach the maximum number of tweets for that file.
 		if size >= 52428800 or (max_tweets != -1 and self.tweets >= max_tweets):
 			end_time = time.strftime("%H%M%S")
 			print_verbose("[*] Uploading the datafile to Amazon S3.")
