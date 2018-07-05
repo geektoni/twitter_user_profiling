@@ -67,7 +67,7 @@ class TwitterFilter(StreamListener):
 	# Custom method to check file size and upload it to amazon s3
 	def check_size(self):
 		size = os.path.getsize(self.filename)
-		if size >= 104857600:  # 100 MB
+		if size >= 52428800:  # 50 MB
 			end_time = time.strftime("%H%M%S")
 			print("[*] Uploading the datafile to Amazon S3.")
 			aws_s3.upload_file(self.filename, bucket_name,  self.filename + "-" + end_time + ".json.gz")
