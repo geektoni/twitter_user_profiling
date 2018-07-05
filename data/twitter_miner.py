@@ -77,7 +77,7 @@ class TwitterFilter(StreamListener):
 		size = os.path.getsize(self.filename)
         # Create a file and upload it only if we reach the dimension of 50MB
         # or if we reach the maximum number of tweets for that file.
-		if size >= 52428800 or (max_tweets != 1 and self.tweets >= max_tweets):
+		if size >= 52428800 or (max_tweets != -1 and self.tweets >= max_tweets):
 			end_time = time.strftime("%H%M%S")
 			print_verbose("[*] Uploading the datafile to Amazon S3.")
 			aws_s3.upload_file(self.filename, bucket_name,  self.filename + "-" + end_time + ".json.gz")
