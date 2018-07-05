@@ -4,11 +4,13 @@
 """Twitter
 
 Usage:
-	twitter_miner.py [--k=<keywords>] [--l=<languages>]
+	twitter_miner.py [--k=<keywords>] [--l=<languages>] [--max=<max_tweets>] [--verbose]
 
-	--k=<keywords>		Filter tweets based on keywords
-	--l=<languages>		Filter tweets based on language
-	-h, --help			Print this help message
+	--k=<keywords>		Filter tweets based on keywords.
+	--l=<languages>		Filter tweets based on language.
+    --max=<max_tweets>  Set the maximum number of tweets we want to mine.
+    --verbose           Verbose behaviour.
+	-h, --help			Print this help message.
 """
 
 import os
@@ -30,6 +32,12 @@ import boto3
 arguments= docopt(__doc__)
 keywords = arguments["--k"]
 languages = arguments["--l"]
+max_tweets = arguments["--max"] if arguments["--max"] else -1
+
+# Print verbose definition
+def print_verbose(text, arg=arguments):
+    if arg["--verbose"]:
+        print(text)
 
 # Keys for Twitter API
 consumer_key = os.environ["CONSUMER_KEY"]
@@ -38,7 +46,7 @@ access_token = os.environ["ACCESS_TOKEN"]
 access_secret = os.environ["ACCESS_SECRET"]
 
 # Get the authentication handler
-print("[*] Logging in into Twitter API")
+print_verbose("[*] Logging in into Twitter API")
 auth = OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_secret)
 
@@ -50,7 +58,7 @@ api = tp.API(auth)
 it_stop_words = get_stop_words("it")
 
 # Open Amazon S3 connection to save the dataset
-print("[*] Logging into Amazon S3")
+print_verbose("[*] Logging into Amazon S3")
 aws_s3 = boto3.client('s3')
 bucket_name = "twitter100days"
 
@@ -67,11 +75,13 @@ class TwitterFilter(StreamListener):
 	# Custom method to check file size and upload it to amazon s3
 	def check_size(self):
 		size = os.path.getsize(self.filename)
-		if size >= 52428800:  # 50 MB
+        # Create a file and upload it only if we reach the dimension of 50MB
+        # or if we reach the maximum number of tweets for that file.
+		if size >= 52428800 or (max_tweets != 1 and self.tweets >= max_tweets):
 			end_time = time.strftime("%H%M%S")
-			print("[*] Uploading the datafile to Amazon S3.")
+			print_verbose("[*] Uploading the datafile to Amazon S3.")
 			aws_s3.upload_file(self.filename, bucket_name,  self.filename + "-" + end_time + ".json.gz")
-			print("[*] Generate new filename.")
+			print_verbose("[*] Generate new filename.")
 			start_time = time.strftime("%Y%m%d-%H%M%S")
 			self.tweets=0
 			os.remove(self.filename)
@@ -81,7 +91,7 @@ class TwitterFilter(StreamListener):
 	def on_data(self, raw_data):
 		try:
 			if self.tweets%10 == 0:
-				print("[*] "+str(self.tweets)+": Writing tweet")
+				print_verbose("[*] "+str(self.tweets)+": Writing tweets")
 			with gzip.GzipFile(self.filename, "ab") as log:
 				log.write(raw_data.encode())
 			self.tweets += 1
@@ -99,9 +109,6 @@ class TwitterFilter(StreamListener):
 
 
 # Get the stream
-print("[*] Get Twitter Stream and start listerning.")
+print_verbose("[*] Get Twitter Stream and start listerning.")
 twitter_stream = Stream(auth, TwitterFilter())
 twitter_stream.filter(track=it_stop_words, languages=['it'])
-
-
-
