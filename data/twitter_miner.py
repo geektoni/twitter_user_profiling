@@ -106,9 +106,9 @@ class TwitterFilter(StreamListener):
 
 	# Custom method to save informations about the number of tweets present in
 	# each of the files
-	def write_file_info(filename, tweet_number, memory):
+	def write_file_info(self, filename, tweet_number, memory):
 		with open(self.filename_info, "w+") as file_info:
-			file_info.write("%s,%i,%i" % filename, tweet_number, memory)
+			file_info.write("%s,%i,%i" % (filename, tweet_number, memory))
 
 	def on_data(self, raw_data):
 		try:
