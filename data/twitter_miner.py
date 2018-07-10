@@ -16,7 +16,7 @@ Usage:
 	--l=<languages>    Filter tweets based on language.
 	--max=<max_tweets> Set the maximum number of tweets we want to mine.
 	--verbose          Verbose behaviour.
-    --no-upload        Do not upload the dataset files to Amazon AWS (keep them on disk).
+	--no-upload        Do not upload the dataset files to Amazon AWS (keep them on disk).
 	-h, --help         Print this help message.
 """
 
@@ -66,11 +66,11 @@ it_stop_words = get_stop_words("it")
 
 # Open Amazon S3 connection to save the dataset
 if not arguments["--no-upload"]:
-    print_verbose("[*] Logging into Amazon S3")
-    aws_s3 = boto3.client('s3')
-    bucket_name = "twitter100days"
+	print_verbose("[*] Logging into Amazon S3")
+	aws_s3 = boto3.client('s3')
+	bucket_name = "twitter100days"
 else:
-    print_verbose("[*] Skipping logging into Amazon S3")
+	print_verbose("[*] Skipping logging into Amazon S3")
 
 # Custom listener to filter the Twitter stream
 class TwitterFilter(StreamListener):
@@ -78,7 +78,7 @@ class TwitterFilter(StreamListener):
 	def __init__(self):
 		start_time = time.strftime("%Y%m%d-%H%M%S")
 		self.filename = "twitter-" + start_time
-        self.filename_info = "twitter-" + start_time + "_info.csv"
+		self.filename_info = "twitter-" + start_time + "_info.csv"
 		self.tweets=0
 		super(TwitterFilter, self).__init__(StreamListener)
 
@@ -90,25 +90,25 @@ class TwitterFilter(StreamListener):
 		# or if we reach the maximum number of tweets for that file.
 		if size >= 52428800 or (max_tweets != -1 and self.tweets >= max_tweets):
 			end_time = time.strftime("%H%M%S")
-            final_filename = self.filename + "-" + end_time + ".json.gz"
-            if not arguments["--no-upload"]:
-                print_verbose("[*] Uploading the datafile to Amazon S3.")
-			    aws_s3.upload_file(self.filename, bucket_name,  final_filename)
-            print_verbose("[*] Write information to file.")
-            self.write_file_info(final_filename, self.tweets, size)
-            print_verbose("[*] Generate new filename.")
+			final_filename = self.filename + "-" + end_time + ".json.gz"
+			if not arguments["--no-upload"]:
+				print_verbose("[*] Uploading the datafile to Amazon S3.")
+				aws_s3.upload_file(self.filename, bucket_name,  final_filename)
+			print_verbose("[*] Write information to file.")
+			self.write_file_info(final_filename, self.tweets, size)
+			print_verbose("[*] Generate new filename.")
 			start_time = time.strftime("%Y%m%d-%H%M%S")
 			self.tweets=0
-            if not arguments["--no-upload"]:
-                os.remove(self.filename)
+			if not arguments["--no-upload"]:
+				os.remove(self.filename)
 			return "twitter-" + start_time
 		return self.filename
 
-    # Custom method to save informations about the number of tweets present in
-    # each of the files
-    def write_file_info(filename, tweet_number, memory):
-        with open(self.filename_info, "w+") as file_info:
-            file_info.write("%s,%i,%i" % filename, tweet_number, memory)
+	# Custom method to save informations about the number of tweets present in
+	# each of the files
+	def write_file_info(filename, tweet_number, memory):
+		with open(self.filename_info, "w+") as file_info:
+			file_info.write("%s,%i,%i" % filename, tweet_number, memory)
 
 	def on_data(self, raw_data):
 		try:
