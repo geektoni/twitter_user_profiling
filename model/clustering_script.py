@@ -7,12 +7,19 @@ Clustering Spark Script
 This is an alpha version. Please use this script from the model directory, otherwise
 it won't find the data.csv file which location is hard-wired into the code.
 
+Possible way to clustering:
+- GMM (Gaussian Mixture Model): For high-dimensional data (with many features), this algorithm may perform poorly.
+This is due to high-dimensional data (a) making it difficult to cluster at all
+(based on statistical/theoretical arguments) and (b) numerical issues with Gaussian distributions.
+- LDA (Latent Dirichlet Allocation): topic model designed for text documents.
+
 Usage:
-	clustering_script.py <algorithm> <dataset_path> [--c=<cluster_number>] [--verbose]
+	clustering_script.py <algorithm> <dataset_path> [--c=<cluster_number>] [--i=<max_iter>] [--verbose]
 
 	<algorithm>				The name of the clustering algorithm we want to use (kmeans, LDA, GMM, B-kmeans);
 	<dataset_path>			The path to the dataset we want to use;
 	--c=<cluster_number>	Fix the number of clusters to specific number (do not work with all the algos);
+	--i=<max_iter>			Max number of iterations
 	--verbose				Verbose mode. Print more information to screen.
 	-h, --help				Print this help message.
 """
@@ -61,7 +68,7 @@ if __name__ == "__main__":
 	try:
 
 		helpers.print_verbose("[*] Getting the correct algorithm", verbose)
-		algorithm = helpers.return_correct_clustering_algorithm(algorithm_type, 5)
+		algorithm = helpers.return_correct_clustering_algorithm(algorithm_type, 5, 10000)
 
 		helpers.print_verbose("[*] Fitting the clustering algorithm {}".format(algorithm_type))
 		model = algorithm.fit(dataset)
@@ -75,10 +82,10 @@ if __name__ == "__main__":
 		print("Silhouette with squared euclidean distance = " + str(silhouette))
 
 		# Shows the cluster centers.
-		centers = model.clusterCenters()
-		print("Cluster Centers: ")
-		for center in centers:
-			print(center)
+		#centers = model.clusterCenters()
+		#print("Cluster Centers: ")
+		#for center in centers:
+		#	print(center)
 
 	except Exception as error:
 		print(error)
