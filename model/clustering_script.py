@@ -46,6 +46,8 @@ if __name__ == "__main__":
 	# Get the options in a more usable fashion.
 	algorithm_type = arguments["<algorithm>"]
 	verbose = arguments["--verbose"]
+	max_clusters = arguments["--c"]
+	max_iter = arguments["--i"]
 
 	# We use directly the SparkSession here instead of SparkConf and SparkContext,
 	# since now the SparkSession is the entrypoint for all functionatilies of pyspark.
@@ -68,7 +70,7 @@ if __name__ == "__main__":
 	try:
 
 		helpers.print_verbose("[*] Getting the correct algorithm", verbose)
-		algorithm = helpers.return_correct_clustering_algorithm(algorithm_type, 5, 10000)
+		algorithm = helpers.return_correct_clustering_algorithm(algorithm_type, max_clusters, max_iter)
 
 		helpers.print_verbose("[*] Fitting the clustering algorithm {}".format(algorithm_type))
 		model = algorithm.fit(dataset)
