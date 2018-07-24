@@ -78,17 +78,6 @@ if __name__ == "__main__":
 		helpers.print_verbose("[*] Transforming the dataset.")
 		predictions = model.transform(dataset)
 
-		# Evaluate how good are our clusters' centers.
-		evaluator = ClusteringEvaluator()
-		silhouette = evaluator.evaluate(predictions)
-		print("Silhouette with squared euclidean distance = " + str(silhouette))
-
-		# Shows the cluster centers.
-		#centers = model.clusterCenters()
-		#print("Cluster Centers: ")
-		#for center in centers:
-		#	print(center)
-
 	except Exception as error:
 		print(error)
 
