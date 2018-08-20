@@ -23,6 +23,7 @@ Usage:
 	--verbose				Verbose mode. Print more information to screen.
 	-h, --help				Print this help message.
 """
+import os
 
 from pyspark.sql import SparkSession
 from pyspark.ml.evaluation import ClusteringEvaluator
@@ -31,12 +32,18 @@ from docopt import docopt
 
 import helpers
 
+
 # FIXME Ubuntu 16.04
 # Remember to export the two local variables:
 # export PYSPARK_PYTHON="python3"
 # export PYSPARK_DRIVER_PYTHON="python3"
 # Otherwise it won't work (because of a conflict between the driver's python version
 # and the worker's python version)
+
+# Options to work correctly with hadoop and aws.
+os.environ['PYSPARK_SUBMIT_ARGS'] = "--jars=/opt/hadoop/share/hadoop/tools/lib/aws-java-sdk-bundle-1.11.271.jar," \
+									"/opt/hadoop/share/hadoop/tools/lib/hadoop-aws-3.1.1.jar" \
+									" pyspark-shell"
 
 if __name__ == "__main__":
 
@@ -64,6 +71,11 @@ if __name__ == "__main__":
 	# For now we are using a custom  method to generate
 	# a sample dataset on the fly, later on we will give the user the ability to
 	# select which dataset to use (dataset = spark.read.csv(arguments["<dataset_path>"]))
+	data_path = "s3a://bigdataprojecttwitter2018/data.csv"
+	spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.access.key",  os.environ["ACCESS_TOKEN"])
+	spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.secret.key", os.environ["ACCESS_SECRET"])
+	spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
+	spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "s3.eu-west-2.amazonaws.com")
 	dataset = helpers.get_sample_features(spark, data_path)
 
 	# Get the correct clustering algorithm based on the string passed by
