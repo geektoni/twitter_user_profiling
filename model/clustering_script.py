@@ -45,6 +45,7 @@ if __name__ == "__main__":
 
 	# Get the options in a more usable fashion.
 	algorithm_type = arguments["<algorithm>"]
+	data_path = arguments["<dataset_path>"]
 	verbose = arguments["--verbose"]
 	max_clusters = arguments["--c"]
 	max_iter = arguments["--i"]
@@ -63,7 +64,7 @@ if __name__ == "__main__":
 	# For now we are using a custom  method to generate
 	# a sample dataset on the fly, later on we will give the user the ability to
 	# select which dataset to use (dataset = spark.read.csv(arguments["<dataset_path>"]))
-	dataset = helpers.get_sample_features(spark)
+	dataset = helpers.get_sample_features(spark, data_path)
 
 	# Get the correct clustering algorithm based on the string passed by
 	# the user.
