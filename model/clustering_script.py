@@ -14,13 +14,14 @@ This is due to high-dimensional data (a) making it difficult to cluster at all
 - LDA (Latent Dirichlet Allocation): topic model designed for text documents.
 
 Usage:
-	clustering_script.py <algorithm> <dataset_path> [--c=<cluster_number>] [--i=<max_iter>] [--verbose]
+	clustering_script.py <algorithm> <dataset_path> [--c=<cluster_number>] [--i=<max_iter>] [--verbose] [--custom-hadoop]
 
 	<algorithm>				The name of the clustering algorithm we want to use (kmeans, LDA, GMM, B-kmeans);
 	<dataset_path>			The path to the dataset we want to use;
 	--c=<cluster_number>	Fix the number of clusters to specific number (do not work with all the algos);
 	--i=<max_iter>			Max number of iterations
 	--verbose				Verbose mode. Print more information to screen.
+	--custom-hadoop			Specify custom location form hadoop's AWS libraries.
 	-h, --help				Print this help message.
 """
 import os
@@ -40,11 +41,6 @@ import helpers
 # Otherwise it won't work (because of a conflict between the driver's python version
 # and the worker's python version)
 
-# Options to work correctly with hadoop and aws.
-os.environ['PYSPARK_SUBMIT_ARGS'] = "--jars=/opt/hadoop/share/hadoop/tools/lib/aws-java-sdk-bundle-1.11.271.jar," \
-									"/opt/hadoop/share/hadoop/tools/lib/hadoop-aws-3.1.1.jar" \
-									" pyspark-shell"
-
 if __name__ == "__main__":
 
 	# Parse the command line
@@ -56,6 +52,14 @@ if __name__ == "__main__":
 	verbose = arguments["--verbose"]
 	max_clusters = arguments["--c"]
 	max_iter = arguments["--i"]
+
+	# FIXME
+	# Options to work correctly with hadoop and AWS (this will be removed soon)
+	if arguments["--custom-hadoop"]:
+		os.environ['PYSPARK_SUBMIT_ARGS'] = "--jars=/opt/hadoop/share/hadoop/tools/lib/aws-java-sdk-bundle-1.11.271.jar," \
+											"/opt/hadoop/share/hadoop/tools/lib/hadoop-aws-3.1.1.jar" \
+											" pyspark-shell"
+
 
 	# We use directly the SparkSession here instead of SparkConf and SparkContext,
 	# since now the SparkSession is the entrypoint for all functionatilies of pyspark.
@@ -71,10 +75,8 @@ if __name__ == "__main__":
 	# For now we are using a custom  method to generate
 	# a sample dataset on the fly, later on we will give the user the ability to
 	# select which dataset to use (dataset = spark.read.csv(arguments["<dataset_path>"]))
-	data_path = "s3a://bigdataprojecttwitter2018/data.csv"
 	spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.access.key",  os.environ["ACCESS_TOKEN"])
 	spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.secret.key", os.environ["ACCESS_SECRET"])
-	spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
 	spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "s3.eu-west-2.amazonaws.com")
 	dataset = helpers.get_sample_features(spark, data_path)
 
