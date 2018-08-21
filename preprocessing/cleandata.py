@@ -14,6 +14,7 @@ from pyspark.sql.functions import udf
 from pyspark.ml.feature import HashingTF, IDF
 
 import re
+import os
 import string
 
 from nltk.corpus import stopwords
@@ -52,7 +53,7 @@ def createFeats(spark, input, output, num_feat):
     tostring_udf = udf(stringify,StringType())
 
     print("loading file")
-    df = spark.read.format("csv").option("header", True) \
+    df = spark.read.format("csv").option("header", False) \
         .option("delimiter", ",").option("inferSchema", True) \
         .load(input)
 
@@ -77,7 +78,8 @@ def createFeats(spark, input, output, num_feat):
 
 def f(row):
     print(row)
-    
+
+
 if __name__ == "__main__":
 
     arguments = docopt(__doc__)
@@ -86,5 +88,13 @@ if __name__ == "__main__":
     dataset_output = arguments["<output_location>"]
 
     spark = SparkSession.builder.appName("data-cleaning").getOrCreate()
+
+    # Set up access for Amazon AWS
+    spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.access.key", os.environ["ACCESS_TOKEN"])
+    spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.secret.key", os.environ["ACCESS_SECRET"])
+    spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "s3.eu-west-2.amazonaws.com")
+
+    # Polish and create the features
     createFeats(spark, dataset_input, dataset_output, 20)
+
     spark.stop()
