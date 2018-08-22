@@ -27,7 +27,7 @@ Usage:
 import os
 
 from pyspark.sql import SparkSession
-from pyspark.ml.evaluation import ClusteringEvaluator
+from pyspark.sql.functions import explode
 
 from docopt import docopt
 
@@ -56,9 +56,9 @@ if __name__ == "__main__":
 	# FIXME
 	# Options to work correctly with hadoop and AWS (this will be removed soon)
 	if arguments["--custom-hadoop"]:
-		os.environ['PYSPARK_SUBMIT_ARGS'] = "--jars=/opt/hadoop/share/hadoop/tools/lib/aws-java-sdk-bundle-1.11.271.jar," \
-											"/opt/hadoop/share/hadoop/tools/lib/hadoop-aws-3.1.1.jar" \
-											" pyspark-shell"
+		os.environ['PYSPARK_SUBMIT_ARGS'] = "--jars=/opt/hadoop/share/hadoop/tools/lib/aws-java-sdk-1.7.4.jar," \
+									 "/opt/hadoop/share/hadoop/tools/lib/hadoop-aws-2.7.7.jar" \
+									 " pyspark-shell"
 
 
 	# We use directly the SparkSession here instead of SparkConf and SparkContext,
@@ -75,10 +75,13 @@ if __name__ == "__main__":
 	# For now we are using a custom  method to generate
 	# a sample dataset on the fly, later on we will give the user the ability to
 	# select which dataset to use (dataset = spark.read.csv(arguments["<dataset_path>"]))
+	dataset = spark.read.parquet(data_path)
 	spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.access.key",  os.environ["ACCESS_TOKEN"])
 	spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.secret.key", os.environ["ACCESS_SECRET"])
 	spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "s3.eu-west-2.amazonaws.com")
-	dataset = helpers.get_sample_features(spark, data_path)
+	dataset = spark.read.parquet(data_path)
+	#dataset = helpers.get_sample_features(spark, data_path)
+	#dataset = helpers.get_sample_features(spark, data_path)
 
 	# Get the correct clustering algorithm based on the string passed by
 	# the user.
@@ -92,6 +95,16 @@ if __name__ == "__main__":
 
 		helpers.print_verbose("[*] Transforming the dataset.")
 		predictions = model.transform(dataset)
+
+		predictions.withColumn("exp_words", explode("filtered_words_2")).filter("prediction=0").groupBy("exp_words").count().orderBy("count", ascending=False).show()
+		predictions.withColumn("exp_words", explode("filtered_words_2")).filter("prediction=1").groupBy("exp_words").count().orderBy("count", ascending=False).show()
+		predictions.withColumn("exp_words", explode("filtered_words_2")).filter("prediction=2").groupBy(
+			"exp_words").count().orderBy("count", ascending=False).show()
+
+		#centers = model.clusterCenters()
+		#print("Cluster Centers: ")
+		#for center in centers:
+		#	print(center)
 
 	except Exception as error:
 		print(error)
