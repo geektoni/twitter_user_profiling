@@ -167,6 +167,7 @@ def createFeats(spark, input, output, num_feat):
     idfModel = idf.fit(featurizedData)
     
     rescaledData = idfModel.transform(featurizedData)
+    rescaledData = rescaledData.select("_c0","filtered_words_2", "features")
     rescaledData.write.parquet(output)
 
 def f(row):
