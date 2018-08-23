@@ -14,7 +14,7 @@ This is due to high-dimensional data (a) making it difficult to cluster at all
 - LDA (Latent Dirichlet Allocation): topic model designed for text documents.
 
 Usage:
-	clustering_script.py <algorithm> <dataset_path> [--c=<cluster_number>] [--i=<max_iter>] [--verbose] [--custom-hadoop]
+	clustering_script.py <algorithm> <dataset_path> [--c=<cluster_number>] [--i=<max_iter>] [--verbose] [--custom-hadoop] [--aws]
 
 	<algorithm>				The name of the clustering algorithm we want to use (kmeans, LDA, GMM, B-kmeans);
 	<dataset_path>			The path to the dataset we want to use;
@@ -75,10 +75,10 @@ if __name__ == "__main__":
 	# For now we are using a custom  method to generate
 	# a sample dataset on the fly, later on we will give the user the ability to
 	# select which dataset to use (dataset = spark.read.csv(arguments["<dataset_path>"]))
-	dataset = spark.read.parquet(data_path)
-	spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.access.key",  os.environ["ACCESS_TOKEN"])
-	spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.secret.key", os.environ["ACCESS_SECRET"])
-	spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "s3.eu-west-2.amazonaws.com")
+	if arguments["--aws"]:
+		spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.access.key",  os.environ["ACCESS_TOKEN"])
+		spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.secret.key", os.environ["ACCESS_SECRET"])
+		spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "s3.eu-west-2.amazonaws.com")
 	dataset = spark.read.parquet(data_path)
 	#dataset = helpers.get_sample_features(spark, data_path)
 	#dataset = helpers.get_sample_features(spark, data_path)

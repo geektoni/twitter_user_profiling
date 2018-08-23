@@ -3,3 +3,4 @@ pyspark==2.3.1
 pandas
 sklearn
 scipy
+numpy
