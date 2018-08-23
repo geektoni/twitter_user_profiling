@@ -11,9 +11,10 @@ sudo apt-get install -y python3-pip unzip
 export LC_ALL="en_US.UTF-8"
 export LC_CTYPE="en_US.UTF-8"
 
-# Get repository
+# Get repository and start from the right branch
 git clone https://github.com/geektoni/twitter100days
 cd twitter100days
+git checkout preprocessing_without_nltk
 
 # Install project requirements
 pip3 install --user -r requirements.txt
