@@ -3,6 +3,7 @@ from pyspark.ml.clustering import KMeans
 from pyspark.ml.clustering import BisectingKMeans
 from pyspark.ml.clustering import GaussianMixture
 from pyspark.ml.clustering import LDA
+from pyspark.sql.functions import explode
 
 
 def return_correct_clustering_algorithm(_type, _cluster_number, _max_iter):
@@ -28,6 +29,34 @@ def return_correct_clustering_algorithm(_type, _cluster_number, _max_iter):
 		return LDA().setK(cluster_number).setMaxIter(max_iter).setSeed(1)
 	else:
 		raise Exception("The clustering algorithm requested {} is not available".format(_type))
+
+
+def get_information_from_model(dataframe, column, _cluster_number, _type):
+	"""
+	Get information from the model and the predictions.
+	:param dataframe:
+	:param column:
+	:param n_clusters:
+	:param _type:
+	:return:
+	"""
+
+	# Check if the cluster number was supplied
+	cluster_number = int(_cluster_number) if _cluster_number else 10
+
+	if _type == "kmeans":
+
+		# Get all the top words contained into each of the clusters
+		# and save them to file.
+		for i in range(0, cluster_number):
+			dataframe.withColumn("tokens", explode(column))\
+			.filter("prediction={}".format(str(i)))\
+			.groupBy("tokens")\
+			.count()\
+			.orderBy("count", ascending=False)\
+			.select("tokens", "count")\
+			.show()
+			#.write.csv("cluster_{}_most_common_words.csv".format(str(i)))
 
 
 def get_sample_features(spark, _data_path, _is_header=False):

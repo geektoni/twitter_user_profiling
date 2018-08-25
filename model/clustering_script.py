@@ -22,6 +22,7 @@ Usage:
 	--i=<max_iter>			Max number of iterations
 	--verbose				Verbose mode. Print more information to screen.
 	--custom-hadoop			Specify custom location form hadoop's AWS libraries.
+	--aws					Enable Amazon S3 search for the dataset (urls as s3a://...)
 	-h, --help				Print this help message.
 """
 import os
@@ -80,8 +81,6 @@ if __name__ == "__main__":
 		spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.secret.key", os.environ["ACCESS_SECRET"])
 		spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "s3.eu-west-2.amazonaws.com")
 	dataset = spark.read.parquet(data_path)
-	#dataset = helpers.get_sample_features(spark, data_path)
-	#dataset = helpers.get_sample_features(spark, data_path)
 
 	# Get the correct clustering algorithm based on the string passed by
 	# the user.
@@ -96,15 +95,7 @@ if __name__ == "__main__":
 		helpers.print_verbose("[*] Transforming the dataset.")
 		predictions = model.transform(dataset)
 
-		predictions.withColumn("exp_words", explode("filtered_words_2")).filter("prediction=0").groupBy("exp_words").count().orderBy("count", ascending=False).show()
-		predictions.withColumn("exp_words", explode("filtered_words_2")).filter("prediction=1").groupBy("exp_words").count().orderBy("count", ascending=False).show()
-		predictions.withColumn("exp_words", explode("filtered_words_2")).filter("prediction=2").groupBy(
-			"exp_words").count().orderBy("count", ascending=False).show()
-
-		#centers = model.clusterCenters()
-		#print("Cluster Centers: ")
-		#for center in centers:
-		#	print(center)
+		helpers.get_information_from_model(predictions, "filtered_words_2", max_clusters, algorithm_type)
 
 	except Exception as error:
 		print(error)
