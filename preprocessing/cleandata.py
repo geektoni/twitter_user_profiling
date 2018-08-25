@@ -5,14 +5,14 @@
 Preprocessing Script
 
 Usage:
-    cleandata.py <dataset_location> <output_location> <num_features> [--aws] [--custom-hadoop]
+    cleandata.py <dataset_location> <output_location> [--f=<num_features>] [--aws] [--custom-hadoop] [--random-splitting]
 """
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
-from pyspark.sql.functions import udf, size
+from pyspark.sql.functions import udf, size, rand
 from pyspark.ml.feature import HashingTF, IDF
-from pyspark.ml.feature import RegexTokenizer, Tokenizer
+from pyspark.ml.feature import Tokenizer
 from pyspark.ml.feature import StopWordsRemover
 
 import re
@@ -36,7 +36,7 @@ def preprocess(text):
 
 def remove_numbers_single_words(sentence):
     min_size = 4
-    return [w for w in sentence if len(w) >= min_size and not re.match(r'\d', w)]  # remove small words and numbers
+    return [w for w in sentence if len(w) > min_size and not re.match(r'\d', w)]  # remove small words and numbers
 
 
 def stringify(array):
@@ -45,7 +45,7 @@ def stringify(array):
     return '[' + ','.join([str(elem) for elem in array]) + ']'
 
 
-def createFeats(spark, input, output, num_feat):
+def createFeats(spark, input, output, num_feat, _split=False):
     preproc_udf = udf(preprocess, StringType())
     remove_udf = udf(remove_numbers_single_words, ArrayType(StringType()))
 
@@ -78,12 +78,30 @@ def createFeats(spark, input, output, num_feat):
     hashingTF = HashingTF(inputCol="filtered_words_2", outputCol="rawFeatures", numFeatures=num_feat)
     featurizedData = hashingTF.transform(df)
 
-    idf = IDF(inputCol="rawFeatures", outputCol="features")
+    idf = IDF(inputCol="rawFeatures", outputCol="features", minDocFreq=5)
     idfModel = idf.fit(featurizedData)
     
     rescaledData = idfModel.transform(featurizedData)
     rescaledData = rescaledData.select("_c0", "filtered_words_2", "features")
-    rescaledData.write.parquet(output)
+
+    # Write the dataset to disk. Split it if needed.
+    if _split:
+
+        # Count the total rows of the file and generate
+        # a shuffled version of the dataset.
+        total_rows = rescaledData.count()
+        shuffled_df = rescaledData.orderBy(rand(1))
+
+        # Generate dataset with this much rows.
+        for s in [1000, 10000, 100000, 1000000]:
+            if s <= total_rows:
+                new_df = shuffled_df.limit(s)
+                new_df.write.parquet(output + "/slice_"+str(s))
+
+        rescaledData.write.parquet(output + "/complete")
+
+    else:
+        rescaledData.write.parquet(output)
 
 def f(row):
     print(row)
@@ -95,7 +113,8 @@ if __name__ == "__main__":
 
     dataset_input = arguments["<dataset_location>"]
     dataset_output = arguments["<output_location>"]
-    features = int(arguments["<num_features>"])
+    features = int(arguments["--f"]) if arguments["--f"] else 262144 # 2^18, default spark parameter
+    split = True if arguments["--random-splitting"] else False
 
     if arguments["--custom-hadoop"]:
         os.environ[
@@ -113,6 +132,6 @@ if __name__ == "__main__":
         spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3.impl", "org.apache.hadoop.fs.s3native.NativeS3FileSystem")
 
     # Polish and create the features
-    createFeats(spark, dataset_input, dataset_output, features)
+    createFeats(spark, dataset_input, dataset_output, features, split)
 
     spark.stop()
