@@ -3,6 +3,7 @@ from pyspark.ml.clustering import KMeans
 from pyspark.ml.clustering import BisectingKMeans
 from pyspark.ml.clustering import GaussianMixture
 from pyspark.ml.clustering import LDA
+from pyspark.ml.evaluation import ClusteringEvaluator
 from pyspark.sql.functions import explode
 
 
@@ -80,6 +81,32 @@ def get_sample_features(spark, _data_path, _is_header=False):
 	idfModel = idf.fit(featurizedData)
 	rescaledData = idfModel.transform(featurizedData)
 	return rescaledData.select("_c0", "features")
+
+
+def repeat_experiment(start_range, end_range, step, fn_to_repeat):
+	"""
+	Repeat an experiment and take the model with the largest Silhouette
+	score.
+	:param start_range: start number of clusters
+	:param end_range: end number of clusters
+	:param step: range's step
+	:param fn_to_repeat: clustering function that needs to be evaluated
+	:return: the predicted number of clusters and the dataframe predicted
+	"""
+	evaluator = ClusteringEvaluator()
+	max_df = fn_to_repeat(start_range)
+	max_k = start_range
+	max_sil = evaluator.evaluate(max_df)
+
+	for k in range(start_range+step, end_range, step):
+		df = fn_to_repeat(k)
+		evaluator = ClusteringEvaluator()
+		silhouette = evaluator.evaluate(df)
+		if silhouette >= max_sil:
+			max_k = k
+			max_df = df
+
+	return max_k, max_df
 
 
 def print_verbose(string, verbose=False):

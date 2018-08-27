@@ -14,7 +14,7 @@ This is due to high-dimensional data (a) making it difficult to cluster at all
 - LDA (Latent Dirichlet Allocation): topic model designed for text documents.
 
 Usage:
-	clustering_script.py <algorithm> <dataset_path> [--c=<cluster_number>] [--i=<max_iter>] [--verbose] [--custom-hadoop] [--aws]
+	clustering_script.py <algorithm> <dataset_path> [--c=<cluster_number>] [--i=<max_iter>] [--find-k] [--verbose] [--custom-hadoop] [--aws]
 
 	<algorithm>				The name of the clustering algorithm we want to use (kmeans, LDA, GMM, B-kmeans);
 	<dataset_path>			The path to the dataset we want to use;
@@ -86,16 +86,28 @@ if __name__ == "__main__":
 	# the user.
 	try:
 
-		helpers.print_verbose("[*] Getting the correct algorithm", verbose)
-		algorithm = helpers.return_correct_clustering_algorithm(algorithm_type, max_clusters, max_iter)
+		def experiment(_max_clusters):
+			helpers.print_verbose("[*] Getting the correct algorithm", verbose)
+			algorithm = helpers.return_correct_clustering_algorithm(algorithm_type, max_clusters, max_iter)
 
-		helpers.print_verbose("[*] Fitting the clustering algorithm {}".format(algorithm_type))
-		model = algorithm.fit(dataset)
+			helpers.print_verbose("[*] Fitting the clustering algorithm {}".format(algorithm_type))
+			model = algorithm.fit(dataset)
 
-		helpers.print_verbose("[*] Transforming the dataset.")
-		predictions = model.transform(dataset)
+			helpers.print_verbose("[*] Transforming the dataset.")
+			predictions = model.transform(dataset)
 
-		helpers.get_information_from_model(predictions, "filtered_words_2", max_clusters, algorithm_type)
+			return predictions
+
+		# Decide if we want to find K automatically or not
+		if arguments["--find-k"]:
+			max_clusters, predictions = helpers.repeat_experiment(10, 100, 10, experiment)
+			print(max_clusters)
+		else:
+			predictions = experiment(max_clusters)
+
+		# Save more informations to disk.
+		if arguments["--verbose"]:
+			helpers.get_information_from_model(predictions, "filtered_words_2", max_clusters, algorithm_type)
 
 	except Exception as error:
 		print(error)
