@@ -53,8 +53,6 @@ if __name__ == "__main__":
 	verbose = arguments["--verbose"]
 	max_clusters = arguments["--c"]
 	max_iter = arguments["--i"]
-	aws_token = arguments["--aws-token"] if arguments["--aws-token"] else os.environ["ACCESS_TOKEN"]
-	aws_secret = arguments["--aws-secret"] if arguments["--aws-secret"] else os.environ["ACCESS_SECRET"]
 
 	# FIXME
 	# Options to work correctly with hadoop and AWS (this will be removed soon)
@@ -79,6 +77,8 @@ if __name__ == "__main__":
 	# a sample dataset on the fly, later on we will give the user the ability to
 	# select which dataset to use (dataset = spark.read.csv(arguments["<dataset_path>"]))
 	if arguments["--aws"]:
+		aws_token = arguments["--aws-token"] if arguments["--aws-token"] else os.environ["ACCESS_TOKEN"]
+		aws_secret = arguments["--aws-secret"] if arguments["--aws-secret"] else os.environ["ACCESS_SECRET"]
 		spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.access.key",  aws_token)
 		spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.secret.key", aws_secret)
 		spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "s3.eu-west-2.amazonaws.com")
