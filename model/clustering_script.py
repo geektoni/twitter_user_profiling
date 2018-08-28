@@ -14,7 +14,7 @@ This is due to high-dimensional data (a) making it difficult to cluster at all
 - LDA (Latent Dirichlet Allocation): topic model designed for text documents.
 
 Usage:
-	clustering_script.py <algorithm> <dataset_path> [--c=<cluster_number>] [--i=<max_iter>] [--find-k] [--verbose] [--custom-hadoop] [--aws] [--aws-token=<aws_token>] [--aws-secret=<aws_secret>]
+	clustering_script.py <algorithm> <dataset_path> [--c=<cluster_number>] [--i=<max_iter>] [--find-k] [--verbose] [--custom-hadoop] [--aws] [--aws-token=<aws_token>] [--aws-secret=<aws_secret>] [--app-name=<app_name>]
 
 	<algorithm>				The name of the clustering algorithm we want to use (kmeans, LDA, GMM, B-kmeans);
 	<dataset_path>			The path to the dataset we want to use;
@@ -53,6 +53,7 @@ if __name__ == "__main__":
 	verbose = arguments["--verbose"]
 	max_clusters = arguments["--c"]
 	max_iter = arguments["--i"]
+	app_name = arguments["--app-name"] if arguments["--app-name"] else "twitter-clustering"
 
 	# FIXME
 	# Options to work correctly with hadoop and AWS (this will be removed soon)
@@ -68,7 +69,7 @@ if __name__ == "__main__":
 	# See stackoverflow.com/questions/43802809/difference-between-sparkcontext-javasparkcontext-sqlcontext-sparksession
 	spark = SparkSession \
 			.builder \
-			.appName("twitter-clustering") \
+			.appName(app_name) \
 			.getOrCreate()
 
 	# TODO:
