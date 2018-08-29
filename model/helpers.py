@@ -30,13 +30,15 @@ def return_correct_clustering_algorithm(_type, _cluster_number, _max_iter):
 		raise Exception("The clustering algorithm requested {} is not available".format(_type))
 
 
-def get_sample_features(spark):
+def get_sample_features(spark, _data_path, _is_header=False):
 	"""
 	Factory method. It will return a DataFrame usable by the clustering algorithms.
 	:param spark: the spark session variable.
+	:param _data_path: path where the data are located (CSV only).
+	:param _is_header: if the file contains an header.
 	:return: a dataframe containing ids and the features.
 	"""
-	sentenceData = spark.read.csv("../data/mock_data/data.csv")
+	sentenceData = spark.read.csv(_data_path, header=_is_header)
 
 	tokenizer = Tokenizer(inputCol="_c2", outputCol="words")
 	wordsData = tokenizer.transform(sentenceData.na.drop(subset=["_c2"]))
