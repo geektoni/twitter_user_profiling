@@ -5,12 +5,12 @@
 Preprocessing Script
 
 Usage:
-    cleandata.py <dataset_location> <output_location> [--f=<num_features>] [--aws] [--custom-hadoop] [--random-splitting]
+    cleandata.py <dataset_location> <output_location> [--f=<num_features>] [--aws] [--custom-hadoop] [--random-splitting] [--auto-feats]
 """
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
-from pyspark.sql.functions import udf, size, rand
+from pyspark.sql.functions import udf, size, rand, explode, countDistinct
 from pyspark.ml.feature import HashingTF, IDF
 from pyspark.ml.feature import Tokenizer
 from pyspark.ml.feature import StopWordsRemover
@@ -74,6 +74,10 @@ def createFeats(spark, input, output, num_feat, _split=False):
     # Remove words smaller that 5 letters and numbers
     df = df.withColumn("filtered_words_2", remove_udf(df["filtered_words"]))
     df = df.filter(size(df.filtered_words_2) > 0)
+
+    # Automatically choose the number of features
+    if arguments["--auto-feats"]:
+        num_feat = df.select("filtered_words_2").withColumn("tokens", explode("filtered_words_2")).select("tokens").distinct().count()
 
     hashingTF = HashingTF(inputCol="filtered_words_2", outputCol="rawFeatures", numFeatures=num_feat)
     featurizedData = hashingTF.transform(df)
