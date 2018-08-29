@@ -45,7 +45,7 @@ def stringify(array):
     return '[' + ','.join([str(elem) for elem in array]) + ']'
 
 
-def createFeats(spark, input, output, num_feat, _split=False):
+def createFeats(spark, input, output, num_feat, _split=False, auto_feats=False):
     preproc_udf = udf(preprocess, StringType())
     remove_udf = udf(remove_numbers_single_words, ArrayType(StringType()))
 
@@ -76,7 +76,7 @@ def createFeats(spark, input, output, num_feat, _split=False):
     df = df.filter(size(df.filtered_words_2) > 0)
 
     # Automatically choose the number of features
-    if arguments["--auto-feats"]:
+    if auto_feats:
         num_feat = df.select("filtered_words_2").withColumn("tokens", explode("filtered_words_2")).select("tokens").distinct().count()
 
     hashingTF = HashingTF(inputCol="filtered_words_2", outputCol="rawFeatures", numFeatures=num_feat)
@@ -119,6 +119,7 @@ if __name__ == "__main__":
     dataset_output = arguments["<output_location>"]
     features = int(arguments["--f"]) if arguments["--f"] else 262144 # 2^18, default spark parameter
     split = True if arguments["--random-splitting"] else False
+    auto_f = True if arguments["--auto-feats"] else False
 
     if arguments["--custom-hadoop"]:
         os.environ[
@@ -136,6 +137,6 @@ if __name__ == "__main__":
         spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3.impl", "org.apache.hadoop.fs.s3native.NativeS3FileSystem")
 
     # Polish and create the features
-    createFeats(spark, dataset_input, dataset_output, features, split)
+    createFeats(spark, dataset_input, dataset_output, features, split, auto_f)
 
     spark.stop()
