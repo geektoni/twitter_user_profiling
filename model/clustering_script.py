@@ -27,6 +27,7 @@ Usage:
 """
 import os
 
+from pyspark.conf import SparkConf
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import explode
 
@@ -67,10 +68,12 @@ if __name__ == "__main__":
 	# since now the SparkSession is the entrypoint for all functionatilies of pyspark.
 	# The Master will be set by the spark-submit command.
 	# See stackoverflow.com/questions/43802809/difference-between-sparkcontext-javasparkcontext-sqlcontext-sparksession
-	spark = SparkSession \
-			.builder \
-			.appName(app_name) \
-			.getOrCreate()
+	conf = SparkConf().setAppName(app_name)
+	conf = (conf.set('spark.executor.memory', '10G')
+			.set('spark.driver.memory', '10G')
+			.set('spark.driver.maxResultSize', '10G'))
+	spark = SparkSession.builder.config(conf=conf).getOrCreate()
+
 
 	# TODO:
 	# Get the dataset.
@@ -91,7 +94,7 @@ if __name__ == "__main__":
 
 		def experiment(_max_clusters):
 			helpers.print_verbose("[*] Getting the correct algorithm", verbose)
-			algorithm = helpers.return_correct_clustering_algorithm(algorithm_type, max_clusters, max_iter)
+			algorithm = helpers.return_correct_clustering_algorithm(algorithm_type, _max_clusters, max_iter)
 
 			helpers.print_verbose("[*] Fitting the clustering algorithm {}".format(algorithm_type))
 			model = algorithm.fit(dataset)
@@ -99,11 +102,14 @@ if __name__ == "__main__":
 			helpers.print_verbose("[*] Transforming the dataset.")
 			predictions = model.transform(dataset)
 
-			return predictions
+			return model, predictions
 
 		# Decide if we want to find K automatically or not
 		if arguments["--find-k"]:
-			max_clusters, predictions = helpers.repeat_experiment(10, 100, 10, experiment)
+			max_clusters, predictions, sil, wss = helpers.repeat_experiment(10, 50, 10, experiment)
+
+			print(sil)
+			print(wss)
 			print(max_clusters)
 		else:
 			predictions = experiment(max_clusters)

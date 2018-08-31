@@ -6,6 +6,8 @@ from pyspark.ml.clustering import LDA
 from pyspark.ml.evaluation import ClusteringEvaluator
 from pyspark.sql.functions import explode
 
+import matplotlib.pyplot as plt
+
 
 def return_correct_clustering_algorithm(_type, _cluster_number, _max_iter):
 	"""
@@ -94,20 +96,35 @@ def repeat_experiment(start_range, end_range, step, fn_to_repeat):
 	:return: the predicted number of clusters and the dataframe predicted
 	"""
 	evaluator = ClusteringEvaluator()
-	max_df = fn_to_repeat(start_range)
+	model, max_df = fn_to_repeat(start_range)
 	max_k = start_range
 	max_sil = evaluator.evaluate(max_df)
 
-	for k in range(start_range+step, end_range, step):
-		df = fn_to_repeat(k)
-		evaluator = ClusteringEvaluator()
+	# Append values
+	silhouette_value = []
+	wss_value =[]
+	silhouette_value.append(max_sil)
+	wss_value.append(model.computeCost(max_df))
+
+	for k in range(start_range+step, end_range+step, step):
+		model_tmp, df = fn_to_repeat(k)
 		silhouette = evaluator.evaluate(df)
+
+		# Append values
+		silhouette_value.append(silhouette)
+		wss_value.append(model_tmp.computeCost(df))
+
+		# Take the maximum
 		if silhouette >= max_sil:
 			max_k = k
 			max_df = df
 
-	return max_k, max_df
+	return max_k, max_df, silhouette_value, wss_value
 
+
+def print_plot(data, range):
+	plt.plot(data, range)
+	plt.show()
 
 def print_verbose(string, verbose=False):
 	"""
