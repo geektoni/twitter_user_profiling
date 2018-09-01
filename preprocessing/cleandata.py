@@ -14,6 +14,7 @@ from pyspark.sql.functions import udf, size, rand, explode, countDistinct
 from pyspark.ml.feature import HashingTF, IDF
 from pyspark.ml.feature import Tokenizer
 from pyspark.ml.feature import StopWordsRemover
+from pyspark.conf import SparkConf
 
 import re
 import os
@@ -117,7 +118,7 @@ if __name__ == "__main__":
 
     dataset_input = arguments["<dataset_location>"]
     dataset_output = arguments["<output_location>"]
-    features = int(arguments["--f"]) if arguments["--f"] else 262144 # 2^18, default spark parameter
+    features = int(arguments["--f"]) if arguments["--f"] else 8192 # 2^13, default spark parameter
     split = True if arguments["--random-splitting"] else False
     auto_f = True if arguments["--auto-feats"] else False
 
@@ -128,6 +129,11 @@ if __name__ == "__main__":
                                  " pyspark-shell"
 
     spark = SparkSession.builder.appName("data-cleaning").getOrCreate()
+    conf = SparkConf().setAppName("data-cleaning")
+    conf = (conf.set('spark.executor.memory', '10G')
+            .set('spark.driver.memory', '10G')
+            .set('spark.driver.maxResultSize', '10G'))
+    spark = SparkSession.builder.config(conf=conf).getOrCreate()
 
     # Set up access for Amazon AWS
     if arguments["--aws"]:
