@@ -69,9 +69,9 @@ if __name__ == "__main__":
 	# The Master will be set by the spark-submit command.
 	# See stackoverflow.com/questions/43802809/difference-between-sparkcontext-javasparkcontext-sqlcontext-sparksession
 	conf = SparkConf().setAppName(app_name)
-	conf = (conf.set('spark.executor.memory', '10G')
-			.set('spark.driver.memory', '10G')
-			.set('spark.driver.maxResultSize', '10G'))
+	conf = (conf.set('spark.executor.memory', '20G')
+                        .set('spark.driver.memory', '20G')
+                        .set('spark.driver.maxResultSize', '10G').set('spark.executor.cores', 5).set('spark.executor.instances', 4).set('spark.default.parallelism', 20))
 	spark = SparkSession.builder.config(conf=conf).getOrCreate()
 
 
@@ -112,7 +112,7 @@ if __name__ == "__main__":
 			print(wss)
 			print(max_clusters)
 		else:
-			predictions = experiment(max_clusters)
+			model, predictions = experiment(max_clusters)
 
 		# Save more informations to disk.
 		if arguments["--verbose"]:

@@ -6,8 +6,6 @@ from pyspark.ml.clustering import LDA
 from pyspark.ml.evaluation import ClusteringEvaluator
 from pyspark.sql.functions import explode
 
-import matplotlib.pyplot as plt
-
 
 def return_correct_clustering_algorithm(_type, _cluster_number, _max_iter):
 	"""
@@ -20,7 +18,7 @@ def return_correct_clustering_algorithm(_type, _cluster_number, _max_iter):
 	"""
 
 	cluster_number = int(_cluster_number) if _cluster_number else 10
-	max_iter = int(_max_iter) if _max_iter else 1000
+	max_iter = int(_max_iter) if _max_iter else 20
 
 	if _type == "kmeans":
 		return KMeans().setK(cluster_number).setMaxIter(max_iter).setSeed(1)
@@ -121,10 +119,6 @@ def repeat_experiment(start_range, end_range, step, fn_to_repeat):
 
 	return max_k, max_df, silhouette_value, wss_value
 
-
-def print_plot(data, range):
-	plt.plot(data, range)
-	plt.show()
 
 def print_verbose(string, verbose=False):
 	"""
