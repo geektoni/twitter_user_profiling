@@ -1,28 +1,26 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+Local K-mean Script
+
+Usage:
+    cleandata.py <dataset_location>  [--aws] [--c=<cluster_number>] [--aws-token=<token>] [--aws-secret=<secret>] [--app-name=<name>]
+"""
+
 from __future__ import print_function
 
-import string
+import os
 import numpy as np
 import pandas as pd
 from sklearn import cluster
 
 from pyspark.sql import SparkSession
-from pyspark.sql import Row, Column
 from pyspark.sql.types import *
 
 from pyspark.sql.functions import udf
 
-
-from pyspark.ml.feature import HashingTF, IDF, Tokenizer, StopWordsRemover
-
-import os
-import sys
-
-import re
-import numpy
-
-from nltk.corpus import stopwords
-from nltk.stem.wordnet import WordNetLemmatizer
-from nltk.tokenize import RegexpTokenizer
+from docopt import docopt
 
 def stringify(array):
     if not array:
@@ -30,13 +28,29 @@ def stringify(array):
     return '[' + ','.join([str(elem) for elem in array]) + ']'
 
 if __name__ == "__main__":
-    spark = SparkSession.builder.appName("data-cleaning").getOrCreate()
+    # Parse the command line
+    arguments = docopt(__doc__)
+
+
+    data_path = arguments["<dataset_path>"]
+    max_clusters = arguments["--c"]
+    app_name = arguments["--app-name"] if arguments["--app-name"] else "twitter-clustering-sklearn"
+
+    spark = SparkSession.builder.appName(app_name).getOrCreate()
+
+    if arguments["--aws"]:
+        aws_token = arguments["--aws-token"] if arguments["--aws-token"] else os.environ["ACCESS_TOKEN"]
+        aws_secret = arguments["--aws-secret"] if arguments["--aws-secret"] else os.environ["ACCESS_SECRET"]
+        spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.access.key", aws_token)
+        spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.secret.key", aws_secret)
+        spark.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "s3.eu-west-2.amazonaws.com")
+
     tostring_udf = udf(stringify,StringType())
 
     print("reading data")
-    df = spark.read.format("parquet").option("header", True) \
+    df = spark.read.format("parquet") \
         .option("inferSchema", True) \
-        .load("data/mock_data/polished_data/slice_1000/")
+        .load(data_path)
     print("done\n\n")
 
     dfpandas = df.toPandas()
@@ -58,9 +72,16 @@ if __name__ == "__main__":
     # print(final_df)
     
     print("starting k-means")
-    k_means = cluster.KMeans(n_clusters=10, max_iter=1000)
-    k_means.fit(feats)
-    print(k_means.cluster_centers_)
+
+    def clustering_algo(_max_clusters):
+        k_means = cluster.KMeans(n_clusters=_max_clusters, max_iter=20)
+        k_means.fit(feats)
+        #print(k_means.cluster_centers_)
+
+    import timeit
+    setup = "from __main__ import clustering_algo"
+    print(timeit.timeit("clustering_algo({})".format(max_clusters), setup=setup))
+
     # print("writing to file csv")
 
     # final_df.to_csv("pippo.csv", index=False)
