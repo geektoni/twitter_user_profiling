@@ -10,11 +10,13 @@ Usage:
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
-from pyspark.sql.functions import udf, size, rand, explode, countDistinct
+from pyspark.sql.functions import udf, size, rand, explode
 from pyspark.ml.feature import HashingTF, IDF
 from pyspark.ml.feature import Tokenizer
 from pyspark.ml.feature import StopWordsRemover
 from pyspark.conf import SparkConf
+
+from nltk.stem.wordnet import WordNetLemmatizer
 
 import re
 import os
@@ -23,10 +25,7 @@ import string
 from docopt import docopt
 
 punct = str.maketrans('', '', string.punctuation)
-words = open("./../data/twitter-stopwords.txt")
-sp_wrd = []
-for w in words:
-    sp_wrd = w.split(",")
+
 
 def preprocess(text):
     sentence = re.sub('http[s]*:\/\/[a-zA-Z0-9\.]+\/[a-zA-Z0-9]+', '', text)    # remove urls
@@ -34,6 +33,13 @@ def preprocess(text):
     sentence = sentence.lower()                                                 # lower case
     return sentence.translate(punct)                                            # remove punctuation
 
+
+def lemmatize_words(sentence):
+    lemma = WordNetLemmatizer()
+    lemmas = [lemma.lemmatize(w) for w in sentence]
+    if not len(lemmas):
+        return None
+    return lemmas
 
 def remove_numbers_single_words(sentence):
     min_size = 4
@@ -49,6 +55,7 @@ def stringify(array):
 def createFeats(spark, input, output, num_feat, _split=False, auto_feats=False):
     preproc_udf = udf(preprocess, StringType())
     remove_udf = udf(remove_numbers_single_words, ArrayType(StringType()))
+    lemmatize_udf = udf(lemmatize_words, ArrayType(StringType()))
 
     print("loading file")
     df = spark.read.format("csv").option("header", False) \
@@ -63,11 +70,17 @@ def createFeats(spark, input, output, num_feat, _split=False, auto_feats=False):
     df = df.filter(df.text.isNotNull())
 
     # Tokenize words
-    tokenizer = Tokenizer(inputCol="text", outputCol="words")
+    tokenizer = Tokenizer(inputCol="text", outputCol="raw_words")
     df = tokenizer.transform(df)
 
+    # Lemmatize
+    df = df.withColumn("words", lemmatize_udf(df["raw_words"]))
+    df = df.drop("raw_words")
+    df = df.filter(df.words.isNotNull())
+    df = df.filter(size(df.words) > 0)
+
     # Remove stopwords
-    all_stopwords = StopWordsRemover.loadDefaultStopWords("english") + sp_wrd + StopWordsRemover.loadDefaultStopWords("italian")
+    all_stopwords = StopWordsRemover.loadDefaultStopWords("english") + StopWordsRemover.loadDefaultStopWords("italian")
     remover = StopWordsRemover(inputCol="words", outputCol="filtered_words", stopWords=all_stopwords)
     df = remover.transform(df)
     df = df.filter(size(df.filtered_words) > 0)
@@ -87,7 +100,7 @@ def createFeats(spark, input, output, num_feat, _split=False, auto_feats=False):
     idfModel = idf.fit(featurizedData)
     
     rescaledData = idfModel.transform(featurizedData)
-    rescaledData = rescaledData.select("_c0", "filtered_words_2", "features")
+    rescaledData = rescaledData.select("_c1", "filtered_words_2", "features")
 
     # Write the dataset to disk. Split it if needed.
     if _split:
@@ -128,7 +141,6 @@ if __name__ == "__main__":
                                  "/opt/hadoop/share/hadoop/tools/lib/hadoop-aws-2.7.7.jar" \
                                  " pyspark-shell"
 
-    spark = SparkSession.builder.appName("data-cleaning").getOrCreate()
     conf = SparkConf().setAppName("data-cleaning")
     conf = (conf.set('spark.executor.memory', '10G')
             .set('spark.driver.memory', '10G')
