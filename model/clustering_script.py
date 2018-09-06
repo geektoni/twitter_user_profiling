@@ -61,11 +61,7 @@ if __name__ == "__main__":
 	spark = SparkSession.builder.config(conf=conf).getOrCreate()
 
 
-	# TODO:
 	# Get the dataset.
-	# For now we are using a custom  method to generate
-	# a sample dataset on the fly, later on we will give the user the ability to
-	# select which dataset to use (dataset = spark.read.csv(arguments["<dataset_path>"]))
 	if arguments["--aws"]:
 		aws_token = arguments["--aws-token"] if arguments["--aws-token"] else os.environ["ACCESS_TOKEN"]
 		aws_secret = arguments["--aws-secret"] if arguments["--aws-secret"] else os.environ["ACCESS_SECRET"]
