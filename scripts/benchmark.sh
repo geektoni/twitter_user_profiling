@@ -24,9 +24,6 @@ else
     cd twitter100days
 fi
 
-# Change to the correct branch
-git checkout preprocessing_without_nltk
-
 # Move to the model dir
 cd model
 
@@ -38,13 +35,18 @@ export PYSPARK_DRIVER_PYTHON="python3"
 for e in 1000 10000 100000 1000000;
 do
     python3 clustering_script.py kmeans s3a://bigdataprojecttwitter2018/data_02/slice_$e --aws --c=100 --aws-token=$AWS_TOKEN --aws-secret=$AWS_SECRET --app-name=data_02_slice_$e
+    python3 local_kmean.py s3a://bigdataprojecttwitter2018/data_02/slice_$e --aws --c=100 --aws-token=$AWS_TOKEN --aws-secret=$AWS_SECRET --app-name=data_02_slice_scikit_$e
 done
 
 python3 clustering_script.py kmeans s3a://bigdataprojecttwitter2018/data_02/complete --aws --c=100 --aws-token=$AWS_TOKEN --aws-secret=$AWS_SECRET --app-name=data_02_complete
-python3 clustering_script.py kmeans s3a://bigdataprojecttwitter2018/data_01/complete --aws --c=100 --aws-token=$AWS_TOKEN --aws-secret=$AWS_SECRET --app-name=data_01_complete
+python3 clustering_script.py kmeans s3a://bigdataprojecttwitter2018/data_01 --aws --c=100 --aws-token=$AWS_TOKEN --aws-secret=$AWS_SECRET --app-name=data_01_complete
+python3 local_kmean.py s3a://bigdataprojecttwitter2018/data_02/complete --aws --c=100 --aws-token=$AWS_TOKEN --aws-secret=$AWS_SECRET --app-name=data_01_complete_scikit
+python3 local_kmean.py s3a://bigdataprojecttwitter2018/data_01 --aws --c=100 --aws-token=$AWS_TOKEN --aws-secret=$AWS_SECRET --app-name=data_02_complete_scikit
+
 
 # Compute the time varying the kernel size
 for k in `seq 10 10 100`
 do
     python3 clustering_script.py kmeans s3a://bigdataprojecttwitter2018/data_02/complete --aws --c=$k --aws-token=$AWS_TOKEN --aws-secret=$AWS_SECRET --app-name=data_02_kernels_complete_$k
+    python3 local_kmean.py s3a://bigdataprojecttwitter2018/data_02/slice_$e --aws --c=$k --aws-token=$AWS_TOKEN --aws-secret=$AWS_SECRET --app-name=data_02_complete_scikit_$k
 done

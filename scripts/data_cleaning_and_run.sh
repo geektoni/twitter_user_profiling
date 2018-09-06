@@ -14,7 +14,6 @@ export LC_CTYPE="en_US.UTF-8"
 # Get repository and start from the right branch
 git clone https://github.com/geektoni/twitter100days
 cd twitter100days
-git checkout preprocessing_without_nltk
 
 # Install project requirements
 pip3 install --user -r requirements.txt
@@ -51,8 +50,8 @@ export PYSPARK_DRIVER_PYTHON="python3"
 # Run the cleaning operations
 # Remember to set manually the ACCESS_TOKEN and ACCESS_SECRET
 cd preprocessing/
-python3 cleandata.py wasb:///tweets_01.csv s3a://bigdataprojecttwitter2018/data_01 1024 --aws
-python3 cleandata.py wasb:///tweets_02.csv s3a://bigdataprojecttwitter2018/data_02 1024 --aws
+python3 cleandata.py wasb:///tweets_01.csv s3a://bigdataprojecttwitter2018/data_01 131072 --aws
+python3 cleandata.py wasb:///tweets_02.csv s3a://bigdataprojecttwitter2018/data_02 131072 --aws
 
 # Run clustering algorithms
 cd ../model
