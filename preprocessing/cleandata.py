@@ -4,8 +4,18 @@
 """
 Preprocessing Script
 
+It can be used to clean the twitter dataset to extract features.
+
 Usage:
-    cleandata.py <dataset_location> <output_location> [--f=<num_features>] [--aws] [--custom-hadoop] [--random-splitting] [--auto-feats]
+    cleandata.py <dataset_location> <output_location> [--f=<num_features>] [--aws] [--random-splitting] [--auto-feats]
+
+    <dataset_location>      Location of the dataset we want to clean;
+    <output_location>       Location for the new files;
+    --f=<num_features>      Total number of features we want (see HashingTF);
+    --aws                   Enable AWS saving/reading of the datasets;
+    --random-splitting      Create slices from the original dataset;
+    --auto-feats            Automatically choose the number of features (based on the distinct count of words of tweets):
+
 """
 
 from pyspark.sql import SparkSession
@@ -134,12 +144,6 @@ if __name__ == "__main__":
     features = int(arguments["--f"]) if arguments["--f"] else 8192 # 2^13, default spark parameter
     split = True if arguments["--random-splitting"] else False
     auto_f = True if arguments["--auto-feats"] else False
-
-    if arguments["--custom-hadoop"]:
-        os.environ[
-            'PYSPARK_SUBMIT_ARGS'] = "--jars=/opt/hadoop/share/hadoop/tools/lib/aws-java-sdk-1.7.4.jar," \
-                                 "/opt/hadoop/share/hadoop/tools/lib/hadoop-aws-2.7.7.jar" \
-                                 " pyspark-shell"
 
     conf = SparkConf().setAppName("data-cleaning")
     conf = (conf.set('spark.executor.memory', '10G')

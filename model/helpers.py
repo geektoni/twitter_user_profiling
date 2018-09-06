@@ -1,8 +1,6 @@
 from pyspark.ml.feature import HashingTF, IDF, Tokenizer
 from pyspark.ml.clustering import KMeans
 from pyspark.ml.clustering import BisectingKMeans
-from pyspark.ml.clustering import GaussianMixture
-from pyspark.ml.clustering import LDA
 from pyspark.ml.evaluation import ClusteringEvaluator
 from pyspark.sql.functions import explode
 
@@ -24,28 +22,24 @@ def return_correct_clustering_algorithm(_type, _cluster_number, _max_iter):
 		return KMeans().setK(cluster_number).setMaxIter(max_iter).setSeed(1)
 	elif _type == "b-kmeans":
 		return BisectingKMeans().setK(cluster_number).setMaxIter(max_iter).setSeed(1)
-	elif _type == "gmm":
-		return GaussianMixture().setK(cluster_number).setMaxIter(max_iter).setSeed(1)
-	elif _type == "lda":
-		return LDA().setK(cluster_number).setMaxIter(max_iter).setSeed(1)
 	else:
 		raise Exception("The clustering algorithm requested {} is not available".format(_type))
 
 
-def get_information_from_model(dataframe, column, _cluster_number, _type):
+def get_information_from_model(dataframe, column, _cluster_number, _type, _output_path):
 	"""
 	Get information from the model and the predictions.
-	:param dataframe:
-	:param column:
-	:param n_clusters:
-	:param _type:
-	:return:
+	:param dataframe: the dataset we want to analyze
+	:param column: the column that contains the tokens
+	:param _cluster_number: the number of cluster which are present in the dataset
+	:param the algorithm type
+	:return: nothing
 	"""
 
 	# Check if the cluster number was supplied
 	cluster_number = int(_cluster_number) if _cluster_number else 10
 
-	if _type == "kmeans":
+	if _type == "kmeans" or _type == "bisecting kmeans":
 
 		# Get all the top words contained into each of the clusters
 		# and save them to file.
@@ -56,8 +50,7 @@ def get_information_from_model(dataframe, column, _cluster_number, _type):
 			.count()\
 			.orderBy("count", ascending=False)\
 			.select("tokens", "count")\
-			.show()
-			#.write.csv("cluster_{}_most_common_words.csv".format(str(i)))
+			.write.csv(_output_path+"/cluster_{}_most_common_words".format(str(i)))
 
 
 def get_sample_features(spark, _data_path, _is_header=False):
@@ -91,7 +84,7 @@ def repeat_experiment(start_range, end_range, step, fn_to_repeat):
 	:param end_range: end number of clusters
 	:param step: range's step
 	:param fn_to_repeat: clustering function that needs to be evaluated
-	:return: the predicted number of clusters and the dataframe predicted
+	:return: best k value, predicted dataframe, silhouette value and wss value
 	"""
 	evaluator = ClusteringEvaluator()
 	model, max_df = fn_to_repeat(start_range)
@@ -114,6 +107,7 @@ def repeat_experiment(start_range, end_range, step, fn_to_repeat):
 
 		# Take the maximum
 		if silhouette >= max_sil:
+			max_sil = silhouette
 			max_k = k
 			max_df = df
 
