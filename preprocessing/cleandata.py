@@ -14,7 +14,7 @@ Usage:
     --f=<num_features>      Total number of features we want (see HashingTF);
     --aws                   Enable AWS saving/reading of the datasets;
     --random-splitting      Create slices from the original dataset;
-    --auto-feats            Automatically choose the number of features (based on the distinct count of words of tweets):
+    --auto-feats            Automatically choose the number of features (based on the distinct count of words of tweets).
 
 """
 

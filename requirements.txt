@@ -5,3 +5,4 @@ sklearn
 scipy
 numpy
 nltk
+timeit

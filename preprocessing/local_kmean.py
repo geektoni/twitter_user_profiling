@@ -6,18 +6,19 @@ Local K-mean Script
 
 Usage:
     cleandata.py <dataset_location>  [--aws] [--c=<cluster_number>] [--aws-token=<token>] [--aws-secret=<secret>] [--app-name=<name>]
+
+    <dataset_location>      Location of the dataset we want to clean;
+    --c=<cluster_number>    Specify how many clusters we want to find;
+    --aws                   Enable AWS saving/reading of the datasets.
 """
-
-from __future__ import print_function
-
 import os
+
 import numpy as np
 import pandas as pd
 from sklearn import cluster
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
-
 from pyspark.sql.functions import udf
 
 from docopt import docopt
@@ -55,34 +56,27 @@ if __name__ == "__main__":
 
     dfpandas = df.toPandas()
     spark.stop()
-
-    # dfpandas.info()
-    # print(dfpandas)
     print("stopped pyspark")
+
+    # Convert features into Pandas column.
     print("feats inline")
     series = dfpandas['features'].apply(lambda x : np.array(x.toArray())).as_matrix().reshape(-1,1)
-    # print(series)
     features = np.apply_along_axis(lambda x : x[0], 1, series)
-    # print(features)
     feats = pd.DataFrame(features)
-    # print(feats)
+
+    # Generate the final dataset (which can be saved to disk.)
     print("drop column and merge datasets")
     dfpandas = dfpandas.drop(columns=["features"])
     final_df = pd.merge(dfpandas, feats, left_index=True, right_index=True)
-    # print(final_df)
-    
+
     print("starting k-means")
 
     def clustering_algo(_max_clusters):
         k_means = cluster.KMeans(n_clusters=_max_clusters, max_iter=20)
         k_means.fit(feats)
-        #print(k_means.cluster_centers_)
 
+    # Run the k-mean algorithm and get its execution time
     import timeit
     setup = "from __main__ import clustering_algo"
-    print(timeit.timeit("clustering_algo({})".format(max_clusters), setup=setup))
-
-    # print("writing to file csv")
-
-    # final_df.to_csv("pippo.csv", index=False)
+    print(timeit.timeit("clustering_algo({})".format(max_clusters), setup=setup, number=1))
     
